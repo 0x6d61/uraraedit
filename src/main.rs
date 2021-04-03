@@ -1,11 +1,5 @@
-mod lib;
 use uraraedit::Editor;
-
-fn die(e: std::io::Error) {
-    panic!("{}", e);
-}
-
 fn main() {
-    let editor = Editor{};
+    let mut editor = Editor::default();
     editor.run()
 }
