@@ -1,7 +1,8 @@
-use std::io::{stdout,stdin,Write};
+use crate::Position;
+use std::io::{stdin, stdout, Write};
 use termion::event::Key;
 use termion::input::TermRead;
-use termion::raw::{IntoRawMode,RawTerminal};
+use termion::raw::{IntoRawMode, RawTerminal};
 
 pub struct Size {
     pub width: u16,
@@ -10,11 +11,11 @@ pub struct Size {
 
 pub struct Terminal {
     size: Size,
-    _stdout:RawTerminal<std::io::Stdout>,
+    _stdout: RawTerminal<std::io::Stdout>,
 }
 
 impl Terminal {
-    pub fn default() -> Result<Self,std::io::Error> {
+    pub fn default() -> Result<Self, std::io::Error> {
         let size = termion::terminal_size()?;
 
         Ok(Self {
@@ -29,17 +30,20 @@ impl Terminal {
         &self.size
     }
     pub fn clear_screen() {
-        println!("{}",termion::clear::All);
+        println!("{}", termion::clear::All);
     }
-    pub fn cursor_position(x:u16,y:u16) {
-        let x = x.saturating_add(1);
-        let y = y.saturating_add(1);
-        println!("{}",termion::cursor::Goto(x,y));
+    pub fn cursor_position(position: &Position) {
+        let Position { mut x, mut y } = position;
+        x = x.saturating_add(1);
+        y = y.saturating_add(1);
+        let x = x as u16;
+        let y = y as u16;
+        println!("{}", termion::cursor::Goto(x, y));
     }
-    pub fn flush() -> Result<(),std::io::Error> {
+    pub fn flush() -> Result<(), std::io::Error> {
         stdout().flush()
     }
-    pub fn read_key() -> Result<Key,std::io::Error> {
+    pub fn read_key() -> Result<Key, std::io::Error> {
         loop {
             if let Some(key) = stdin().lock().keys().next() {
                 return key;
@@ -47,12 +51,12 @@ impl Terminal {
         }
     }
     pub fn cursor_hide() {
-        print!("{}",termion::cursor::Hide);
+        print!("{}", termion::cursor::Hide);
     }
     pub fn cursor_show() {
-        print!("{}",termion::cursor::Show);
+        print!("{}", termion::cursor::Show);
     }
     pub fn clear_current_line() {
-        print!("{}",termion::clear::CurrentLine);
+        print!("{}", termion::clear::CurrentLine);
     }
 }
