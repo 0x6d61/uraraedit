@@ -73,6 +73,7 @@ impl Editor {
             Key::Up | Key::Down | Key::Left | Key::Right => self.move_cursor(pressed_key),
             _ => (),
         }
+        self.scroll();
 
         Ok(())
     }
@@ -91,7 +92,7 @@ impl Editor {
         self.cursor_position = Position { x, y }
     }
     pub fn draw_row(&self, row: &Row) {
-        let width = self.terminal.size().width as usize;ファイルーズあい
+        let width = self.terminal.size().width as usize;
         let start = self.offset.x;
         let end = self.offset.x + width;
         let row = row.render(start, end);
