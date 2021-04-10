@@ -31,7 +31,7 @@ impl Terminal {
         &self.size
     }
     pub fn clear_screen() {
-        println!("{}", termion::clear::All);
+        print!("{}", termion::clear::All);
     }
     #[allow(clippy::cast_possible_truncation)]
     pub fn cursor_position(position: &Position) {
@@ -40,7 +40,7 @@ impl Terminal {
         y = y.saturating_add(1);
         let x = x as u16;
         let y = y as u16;
-        println!("{}", termion::cursor::Goto(x, y));
+        print!("{}", termion::cursor::Goto(x, y));
     }
     pub fn flush() -> Result<(), std::io::Error> {
         stdout().flush()
@@ -65,12 +65,12 @@ impl Terminal {
         print!("{}", color::Bg(color));
     }
     pub fn reset_bg_color() {
-        println!("{}", color::Bg(color::Reset));
+        print!("{}", color::Bg(color::Reset));
     }
     pub fn set_fg_color(color: color::Rgb) {
-        println!("{}", color::Fg(color))
+        print!("{}", color::Fg(color));
     }
     pub fn reset_fg_color() {
-        print!("{}", color::Fg(color::Reset))
+        print!("{}", color::Fg(color::Reset));
     }
 }
