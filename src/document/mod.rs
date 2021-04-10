@@ -4,10 +4,10 @@ use crate::Position;
 use row::Row;
 use std::fs;
 
-
+#[derive(Debug)]
 #[derive(Default)]
 pub struct Document {
-    rows: Vec<Row>,
+    pub rows: Vec<Row>,
     pub file_name: Option<String>,
 }
 
@@ -33,7 +33,7 @@ impl Document {
     pub fn len(&self) -> usize {
         self.rows.len()
     }
-    fn insert_newline(&mut self,at:&Position) {
+    pub fn insert_newline(&mut self,at:&Position) {
         if at.y > self.len() {
             return;
         }

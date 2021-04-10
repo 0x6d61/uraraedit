@@ -1,10 +1,11 @@
 use std::cmp;
 use unicode_segmentation::UnicodeSegmentation;
 
+#[derive(Debug)]
 #[derive(Default)]
 pub struct Row {
-    string: String,
-    len: usize,
+    pub string: String,
+    pub len: usize,
 }
 
 impl From<&str> for Row {

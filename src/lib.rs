@@ -1,5 +1,5 @@
-mod document;
-mod terminal;
+pub mod document;
+pub mod terminal;
 
 use document::{row::Row, Document};
 use std::env;
