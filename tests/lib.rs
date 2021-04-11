@@ -7,22 +7,37 @@ mod tests {
     use uraraedit::document::Document;
     use uraraedit::document::row::Row;
     use uraraedit::Position;
-    #[test]
-    fn document_test() {
-        let filename = "example.txt";
-        let mut file = File::create(&filename).unwrap();
+    fn create_example_file(filename: &str) {
+        let mut file = File::create(filename).unwrap();
         file.write_all(b"test\nfoo\nwei").unwrap();
-        let mut document = Document::open(&filename).unwrap();
+    }
+    fn remove_example_file(filename:&str) {
+        fs::remove_file(filename).unwrap();
+    }
+    #[test]
+    fn test_document_is_empty() {
+        let filename = "test_document_is_empty.txt";
+        create_example_file(&filename);
+        let document = Document::open(&filename).unwrap();
 
         //空ファイルの場合,true 
         assert_eq!(document.is_empty(),false);
-        //指定したindexの行を取得する
-        if let Some(row) = document.row(0) {
-            assert_eq!(row.string,"test");
-            assert_eq!(row.len,4);
-        }
+        remove_example_file(filename);
+    }
+    #[test]
+    fn test_document_len() {
+        let filename = "test_document_len.txt";
+        create_example_file(&filename);
+        let document = Document::open(&filename).unwrap();
         //行数を取得
         assert_eq!(document.len(),3);
+        remove_example_file(filename);
+    }
+    #[test]
+    fn test_document_insert_newline() {
+        let filename = "test_document_insert_newline.txt";
+        create_example_file(&filename);
+        let mut document = Document::open(&filename).unwrap();
         //新しい行を追加
         let position = Position{
             x:0,
@@ -41,5 +56,14 @@ mod tests {
         };
         document.insert_newline(&position);
         assert_eq!(document.rows.len(),5);
+        remove_example_file(filename);
+
+    }
+    #[test]
+    fn test_document_insert() {
+        let filename = "test_document_insert.txt";
+        create_example_file(&filename);
+        let mut document = Document::open(&filename).unwrap();
+
     }
 }
