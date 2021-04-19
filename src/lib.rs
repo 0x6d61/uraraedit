@@ -8,6 +8,10 @@ use std::time::Instant;
 use terminal::Terminal;
 use termion::color;
 use termion::event::Key;
+use syntect::easy::HighlightLines;
+use syntect::parsing::SyntaxSet;
+use syntect::highlighting::{ThemeSet, Style};
+use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
 
 const STATUS_FG_COLOR: color::Rgb = color::Rgb(63, 63, 63);
 const STATUS_BG_COLOR: color::Rgb = color::Rgb(239, 239, 239);
@@ -39,6 +43,8 @@ pub struct Editor {
     offset: Position,
     document: Document,
     status_message: StatusMessage,
+    ts:ThemeSet,
+    ss:SyntaxSet,
 }
 
 impl Editor {
@@ -78,6 +84,8 @@ impl Editor {
             cursor_position: Position::default(),
             offset: Position::default(),
             status_message: StatusMessage::from(initial_status),
+            ss:SyntaxSet::load_defaults_newlines(),
+            ts:ThemeSet::load_defaults()
         }
     }
 
@@ -109,10 +117,9 @@ impl Editor {
         }
         if self.document.save().is_ok() {
             self.status_message = StatusMessage::from("File saved successfully".to_string());
-        }else{
+        } else {
             self.status_message = StatusMessage::from("Error writing file!".to_string());
         }
-
     }
     fn process_keypress(&mut self) -> Result<(), std::io::Error> {
         let pressed_key = Terminal::read_key()?;
@@ -122,7 +129,7 @@ impl Editor {
             Key::Char(c) => {
                 self.document.insert(&self.cursor_position, c);
                 self.move_cursor(Key::Right);
-            },
+            }
             Key::Delete => self.document.delete(&self.cursor_position),
             Key::Backspace => {
                 if self.cursor_position.x > 0 || self.cursor_position.y > 0 {
@@ -210,19 +217,24 @@ impl Editor {
         welcome_message.truncate(width);
         println!("{}\r", welcome_message);
     }
-    pub fn draw_row(&self, row: &Row) {
+    pub fn draw_row(&self, row: &Row) -> String {
         let width = self.terminal.size().width as usize;
         let start = self.offset.x;
         let end = self.offset.x + width;
         let row = row.render(start, end);
-        println!("{}\r", row)
+        row
     }
     fn draw_rows(&self) {
+        let syntax = self.ss.find_syntax_by_extension("rs").unwrap();
+        let mut highlight = HighlightLines::new(syntax, &self.ts.themes["base16-eighties.dark"]);
         let height = self.terminal.size().height;
         for terminal_row in 0..height {
             Terminal::clear_current_line();
             if let Some(row) = self.document.row(terminal_row as usize + self.offset.y) {
-                self.draw_row(row);
+                let drow = self.draw_row(row);
+                let ranges: Vec<(Style, &str)> = highlight.highlight(&drow, &self.ss);
+                let escaped = as_24_bit_terminal_escaped(&ranges[..], true);
+                println!("{}\r", escaped);
             } else if self.document.is_empty() && terminal_row == height / 3 {
                 self.draw_welcome_message();
             } else {
@@ -266,27 +278,27 @@ impl Editor {
             print!("{}", text);
         }
     }
-    fn prompt(&mut self,prompt:&str) -> Result<Option<String>,std::io::Error> {
+    fn prompt(&mut self, prompt: &str) -> Result<Option<String>, std::io::Error> {
         let mut result = String::new();
         loop {
-            self.status_message = StatusMessage::from(format!("{}{}",prompt,result));
+            self.status_message = StatusMessage::from(format!("{}{}", prompt, result));
             self.refresh_screen()?;
             match Terminal::read_key()? {
                 Key::Backspace => {
                     if !result.is_empty() {
                         result.truncate(result.len() - 1);
                     }
-                },
+                }
                 Key::Char('\n') => break,
                 Key::Char(c) => {
                     if !c.is_control() {
                         result.push(c);
                     }
-                },
+                }
                 Key::Esc => {
                     result.truncate(0);
                     break;
-                },
+                }
                 _ => (),
             }
         }
