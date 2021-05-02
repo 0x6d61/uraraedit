@@ -3,15 +3,17 @@ pub mod terminal;
 
 use document::{row::Row, Document};
 use std::env;
+use std::io::stdin;
 use std::time::Duration;
 use std::time::Instant;
+use syntect::easy::HighlightLines;
+use syntect::highlighting::{Color, Style, Theme, ThemeSet};
+use syntect::parsing::SyntaxSet;
+use syntect::util::as_24_bit_terminal_escaped;
 use terminal::Terminal;
 use termion::color;
 use termion::event::Key;
-use syntect::easy::HighlightLines;
-use syntect::parsing::SyntaxSet;
-use syntect::highlighting::{ThemeSet, Style};
-use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
+use termion::input::TermRead;
 
 const STATUS_FG_COLOR: color::Rgb = color::Rgb(63, 63, 63);
 const STATUS_BG_COLOR: color::Rgb = color::Rgb(239, 239, 239);
@@ -43,8 +45,9 @@ pub struct Editor {
     offset: Position,
     document: Document,
     status_message: StatusMessage,
-    ts:ThemeSet,
-    ss:SyntaxSet,
+    background_color: Color,
+    ts: Theme,
+    ss: SyntaxSet,
 }
 
 impl Editor {
@@ -61,6 +64,7 @@ impl Editor {
             }
         }
     }
+    
     pub fn default() -> Self {
         let args: Vec<String> = env::args().collect();
         let mut initial_status = String::from("HELP: Ctrl-Q = quit|Ctrl-S = save");
@@ -76,7 +80,20 @@ impl Editor {
         } else {
             Document::default()
         };
+        let timeout = std::time::Duration::from_millis(100);
+        let rgb = termbg::rgb(timeout).unwrap();
+        /*
+        *colorを取得する時に/を自動入力しているため
+        *document.Rows.Row(0)の先頭に/を追加させない処理
+        */
 
+        if let Some(_) = stdin().lock().keys().next() {}
+        let background_color = Color {
+            r: rgb.r as u8,
+            b: rgb.b as u8,
+            g: rgb.g as u8,
+            a: 255,
+        };
         Self {
             should_quit: false,
             terminal: Terminal::default().expect("Failed to initialize terminal"),
@@ -84,12 +101,13 @@ impl Editor {
             cursor_position: Position::default(),
             offset: Position::default(),
             status_message: StatusMessage::from(initial_status),
-            ss:SyntaxSet::load_defaults_newlines(),
-            ts:ThemeSet::load_defaults()
+            background_color,
+            ss: SyntaxSet::load_defaults_newlines(),
+            ts: ThemeSet::load_defaults().themes["base16-ocean.dark"].clone(),
         }
     }
 
-    fn refresh_screen(&self) -> Result<(), std::io::Error> {
+    fn refresh_screen(&mut self) -> Result<(), std::io::Error> {
         Terminal::cursor_hide();
         Terminal::cursor_position(&Position::default());
         if !self.should_quit {
@@ -224,9 +242,10 @@ impl Editor {
         let row = row.render(start, end);
         row
     }
-    fn draw_rows(&self) {
+    fn draw_rows(&mut self) {
         let syntax = self.ss.find_syntax_by_extension("rs").unwrap();
-        let mut highlight = HighlightLines::new(syntax, &self.ts.themes["base16-eighties.dark"]);
+        self.ts.settings.background = Some(self.background_color);
+        let mut highlight = HighlightLines::new(syntax, &self.ts);
         let height = self.terminal.size().height;
         for terminal_row in 0..height {
             Terminal::clear_current_line();

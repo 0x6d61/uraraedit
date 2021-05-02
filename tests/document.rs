@@ -5,7 +5,6 @@ mod tests {
     use std::fs::{self,File};
     use std::io::Write;
     use uraraedit::document::Document;
-    use uraraedit::document::row::Row;
     use uraraedit::Position;
     fn create_example_file(filename: &str) {
         let mut file = File::create(filename).unwrap();
