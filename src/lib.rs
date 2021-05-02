@@ -7,9 +7,9 @@ use std::io::stdin;
 use std::time::Duration;
 use std::time::Instant;
 use syntect::easy::HighlightLines;
-use syntect::highlighting::{Color, Style, Theme, ThemeSet};
-use syntect::parsing::SyntaxSet;
+use syntect::highlighting::{Style,Color, Theme, ThemeSet};
 use syntect::util::as_24_bit_terminal_escaped;
+use syntect::parsing::SyntaxSet;
 use terminal::Terminal;
 use termion::color;
 use termion::event::Key;
@@ -64,7 +64,7 @@ impl Editor {
             }
         }
     }
-    
+
     pub fn default() -> Self {
         let args: Vec<String> = env::args().collect();
         let mut initial_status = String::from("HELP: Ctrl-Q = quit|Ctrl-S = save");
@@ -83,23 +83,29 @@ impl Editor {
         let timeout = std::time::Duration::from_millis(100);
         let rgb = termbg::rgb(timeout).unwrap();
         /*
-        *colorを取得する時に/を自動入力しているため
-        *document.Rows.Row(0)の先頭に/を追加させない処理
-        */
+         *colorを取得する時に/を自動入力しているため
+         *document.Rows.Row(0)の先頭に/を追加させない処理
+         */
 
         if let Some(_) = stdin().lock().keys().next() {}
-        let background_color = Color {
-            r: rgb.r as u8,
-            b: rgb.b as u8,
-            g: rgb.g as u8,
-            a: 255,
-        };
+        let background_color = Color{
+            r:(rgb.r >> 8) as u8,
+            b:(rgb.b >> 8) as u8,
+            g:(rgb.g >> 8) as u8,
+            a:0,
+    };
         Self {
             should_quit: false,
             terminal: Terminal::default().expect("Failed to initialize terminal"),
             document,
-            cursor_position: Position::default(),
-            offset: Position::default(),
+            cursor_position: Position {
+                x:6,
+                y:0,
+            },
+            offset: Position {
+                x:0,
+                y:0
+            },
             status_message: StatusMessage::from(initial_status),
             background_color,
             ss: SyntaxSet::load_defaults_newlines(),
@@ -193,14 +199,14 @@ impl Editor {
                 }
             }
             Key::Left => {
-                if x > 0 {
+                if x > 6 {
                     x -= 1;
                 } else if y > 0 {
                     y -= 1;
                     if let Some(row) = self.document.row(y) {
                         x = row.len();
                     } else {
-                        x = 0;
+                        x = 6;
                     }
                 }
             }
@@ -209,7 +215,7 @@ impl Editor {
                     x += 1;
                 } else if y < height {
                     y += 1;
-                    x = 0;
+                    x = 6;
                 }
             }
             _ => (),
@@ -217,7 +223,7 @@ impl Editor {
         width = if let Some(row) = self.document.row(y) {
             row.len()
         } else {
-            0
+            6
         };
         if x > width {
             x = width;
@@ -225,6 +231,7 @@ impl Editor {
 
         self.cursor_position = Position { x, y }
     }
+
     fn draw_welcome_message(&self) {
         let mut welcome_message = format!("urara editor -- version {}", VERSION);
         let width = self.terminal.size().width as usize;
@@ -235,11 +242,14 @@ impl Editor {
         welcome_message.truncate(width);
         println!("{}\r", welcome_message);
     }
-    pub fn draw_row(&self, row: &Row) -> String {
+    pub fn draw_row(&self, row: &Row,terminal_row : usize) -> String {
         let width = self.terminal.size().width as usize;
         let start = self.offset.x;
         let end = self.offset.x + width;
         let row = row.render(start, end);
+        Terminal::set_fg_color(color::Rgb(255,215,0));
+        print!("{0:>5} ", terminal_row as usize+self.offset.y);
+        Terminal::reset_fg_color();
         row
     }
     fn draw_rows(&mut self) {
@@ -250,10 +260,10 @@ impl Editor {
         for terminal_row in 0..height {
             Terminal::clear_current_line();
             if let Some(row) = self.document.row(terminal_row as usize + self.offset.y) {
-                let drow = self.draw_row(row);
+                let drow = self.draw_row(row,terminal_row as usize);
                 let ranges: Vec<(Style, &str)> = highlight.highlight(&drow, &self.ss);
                 let escaped = as_24_bit_terminal_escaped(&ranges[..], true);
-                println!("{}\r", escaped);
+               println!("{}\r",escaped);
             } else if self.document.is_empty() && terminal_row == height / 3 {
                 self.draw_welcome_message();
             } else {
@@ -333,3 +343,4 @@ fn die(e: std::io::Error) {
     Terminal::clear_screen();
     panic!("{}", e);
 }
+

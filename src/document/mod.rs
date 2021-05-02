@@ -72,7 +72,7 @@ impl Document {
             row.append(&next_row);
         }else{
             let row = self.rows.get_mut(at.y).unwrap();
-            row.delete(at.x);
+            row.delete(at.x-6);
         }
     }
     pub fn save(&self) -> Result<(),Error> {
