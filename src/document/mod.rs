@@ -48,7 +48,10 @@ impl Document {
         }
 
         if at.y == self.len()  {
-            self.rows.push(Row::default());
+            self.rows.push(Row{
+                string:"".to_string(),
+                len:crate::NUMBER_PRINT_OFFSET,
+            });
             return;
         }
         let new_row = self.rows.get_mut(at.y).unwrap().split(at.x);
@@ -65,7 +68,7 @@ impl Document {
             self.rows.push(row);
         }else if at.y < self.len() {
             let row = self.rows.get_mut(at.y).unwrap();
-            row.insert(at.x+6,c);
+            row.insert(at.x+crate::NUMBER_PRINT_OFFSET,c);
 
         }
     }
@@ -80,7 +83,7 @@ impl Document {
             row.append(&next_row);
         }else{
             let row = self.rows.get_mut(at.y).unwrap();
-            row.delete(at.x-6);
+            row.delete(at.x-crate::NUMBER_PRINT_OFFSET);
         }
     }
     pub fn save(&self) -> Result<(),Error> {

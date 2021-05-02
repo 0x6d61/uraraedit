@@ -15,6 +15,7 @@ use termion::color;
 use termion::event::Key;
 use termion::input::TermRead;
 
+pub const NUMBER_PRINT_OFFSET:usize = 6; 
 const STATUS_FG_COLOR: color::Rgb = color::Rgb(63, 63, 63);
 const STATUS_BG_COLOR: color::Rgb = color::Rgb(239, 239, 239);
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -99,7 +100,7 @@ impl Editor {
             terminal: Terminal::default().expect("Failed to initialize terminal"),
             document,
             cursor_position: Position {
-                x:6,
+                x:NUMBER_PRINT_OFFSET,
                 y:0,
             },
             offset: Position {
@@ -152,6 +153,13 @@ impl Editor {
             Key::Ctrl('s') => self.save(),
             Key::Char(c) => {
                 self.document.insert(&self.cursor_position, c);
+                /*
+                *tab == 4space
+                *カーソールをspace4つ分動かす
+                */
+                if c == '\t' {
+                    self.cursor_position.x += 3;
+                }
                 self.move_cursor(Key::Right);
             }
             Key::Delete => self.document.delete(&self.cursor_position),
@@ -194,19 +202,19 @@ impl Editor {
         match key {
             Key::Up => y = y.saturating_sub(1),
             Key::Down => {
-                if y < height {
+                if y < height-1 {
                     y = y.saturating_add(1);
                 }
             }
             Key::Left => {
-                if x > 6 {
+                if x > NUMBER_PRINT_OFFSET {
                     x -= 1;
                 } else if y > 0 {
                     y -= 1;
                     if let Some(row) = self.document.row(y) {
                         x = row.len();
                     } else {
-                        x = 6;
+                        x = NUMBER_PRINT_OFFSET;
                     }
                 }
             }
@@ -215,7 +223,7 @@ impl Editor {
                     x += 1;
                 } else if y < height {
                     y += 1;
-                    x = 6;
+                    x = NUMBER_PRINT_OFFSET;
                 }
             }
             _ => (),
@@ -223,7 +231,7 @@ impl Editor {
         width = if let Some(row) = self.document.row(y) {
             row.len()
         } else {
-            6
+            NUMBER_PRINT_OFFSET
         };
         if x > width {
             x = width;
@@ -248,7 +256,7 @@ impl Editor {
         let end = self.offset.x + width;
         let row = row.render(start, end);
         Terminal::set_fg_color(color::Rgb(255,215,0));
-        print!("{0:>5} ", terminal_row as usize+self.offset.y);
+        print!("{0:>5} ", terminal_row as usize+self.offset.y+1);
         Terminal::reset_fg_color();
         row
     }
@@ -339,7 +347,6 @@ impl Editor {
         Ok(Some(result))
     }
 }
-
 fn die(e: std::io::Error) {
     Terminal::clear_screen();
     panic!("{}", e);
