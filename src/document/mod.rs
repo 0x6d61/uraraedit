@@ -4,12 +4,15 @@ use crate::Position;
 use row::Row;
 use std::fs;
 use std::io::{Error,Write};
+use std::path::Path;
+
 
 #[derive(Debug)]
 #[derive(Default)]
 pub struct Document {
     pub rows: Vec<Row>,
     pub file_name: Option<String>,
+    pub extension:Option<String>,
 }
 
 impl Document {
@@ -19,8 +22,13 @@ impl Document {
         for line in contents.lines() {
             rows.push(Row::from(line));
         }
+        let extension = match Path::new(filename).extension() {
+            Some(ext) => ext.to_str().unwrap(),
+            None => "txt"
+        };
         Ok(Self{
             rows,
+            extension:Some(extension.to_string()),
             file_name: Some(filename.to_string())
         })
     }
@@ -57,7 +65,7 @@ impl Document {
             self.rows.push(row);
         }else if at.y < self.len() {
             let row = self.rows.get_mut(at.y).unwrap();
-            row.insert(at.x,c);
+            row.insert(at.x+6,c);
 
         }
     }

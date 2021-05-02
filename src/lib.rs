@@ -253,7 +253,8 @@ impl Editor {
         row
     }
     fn draw_rows(&mut self) {
-        let syntax = self.ss.find_syntax_by_extension("rs").unwrap();
+        let ext = self.document.extension.clone().unwrap_or("txt".to_string());
+        let syntax = self.ss.find_syntax_by_extension(&ext).unwrap();
         self.ts.settings.background = Some(self.background_color);
         let mut highlight = HighlightLines::new(syntax, &self.ts);
         let height = self.terminal.size().height;

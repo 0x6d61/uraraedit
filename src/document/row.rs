@@ -53,8 +53,8 @@ impl Row {
         if at >= self.len() {
             self.string.push(c);
         } else {
-            let mut result: String = self.string[..].graphemes(true).take(at-6).collect();
-            let remainder: String = self.string[..].graphemes(true).skip(at-6).collect();
+            let mut result: String = self.string[..].graphemes(true).take(at).collect();
+            let remainder: String = self.string[..].graphemes(true).skip(at).collect();
             result.push(c);
             result.push_str(&remainder);
             self.string = result;
