@@ -3,4 +3,3 @@ fn main() {
     let mut editor = Editor::default();
     editor.run()
 }
-
