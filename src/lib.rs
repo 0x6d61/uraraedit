@@ -162,6 +162,13 @@ impl Editor {
                 self.should_quit = true;
             },
             Key::Ctrl('s') => self.save(),
+            Key::Ctrl('a') => {
+                self.cursor_position.x = crate::NUMBER_PRINT_OFFSET;
+            },
+            Key::Ctrl('e') => {
+                let end_line =  self.document.row(self.cursor_position.y as usize).unwrap().len;
+                self.cursor_position.x = end_line;
+            }
             Key::Char(c) => {
                 self.document.insert(&self.cursor_position, c);
                 /*
