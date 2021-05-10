@@ -65,6 +65,11 @@ impl Row {
             self.string = result;
         }
         self.update_len();
+        if c == "{".to_string() {
+            return self.insert(at+1,'}');
+        }else if c == "'".to_string() {
+            return self.insert(at+1, '\'');
+        }
     }
     pub fn delete(&mut self, at: usize) {
         if at >= self.len() {

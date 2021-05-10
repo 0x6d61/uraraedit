@@ -7,19 +7,18 @@ use std::io::stdin;
 use std::time::Duration;
 use std::time::Instant;
 use syntect::easy::HighlightLines;
-use syntect::highlighting::{Style,Color, Theme, ThemeSet};
-use syntect::util::as_24_bit_terminal_escaped;
+use syntect::highlighting::{Color, Style, Theme, ThemeSet};
 use syntect::parsing::SyntaxSet;
+use syntect::util::as_24_bit_terminal_escaped;
 use terminal::Terminal;
 use termion::color;
 use termion::event::Key;
 use termion::input::TermRead;
 
-pub const NUMBER_PRINT_OFFSET:usize = 6; 
+pub const NUMBER_PRINT_OFFSET: usize = 6;
 const STATUS_FG_COLOR: color::Rgb = color::Rgb(63, 63, 63);
 const STATUS_BG_COLOR: color::Rgb = color::Rgb(239, 239, 239);
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-
 
 #[derive(Default)]
 pub struct Position {
@@ -90,31 +89,27 @@ impl Editor {
          */
 
         if let Some(_) = stdin().lock().keys().next() {}
-        let background_color = Color{
-            r:(rgb.r >> 8) as u8,
-            b:(rgb.b >> 8) as u8,
-            g:(rgb.g >> 8) as u8,
-            a:0,
-    };
+        let background_color = Color {
+            r: (rgb.r >> 8) as u8,
+            b: (rgb.b >> 8) as u8,
+            g: (rgb.g >> 8) as u8,
+            a: 0,
+        };
         Self {
             should_quit: false,
             terminal: Terminal::default().expect("Failed to initialize terminal"),
             document,
             cursor_position: Position {
-                x:NUMBER_PRINT_OFFSET,
-                y:0,
+                x: NUMBER_PRINT_OFFSET,
+                y: 0,
             },
-            offset: Position {
-                x:0,
-                y:0
-            },
+            offset: Position { x: 0, y: 0 },
             status_message: StatusMessage::from(initial_status),
             background_color,
             ss: SyntaxSet::load_defaults_newlines(),
             ts: ThemeSet::load_defaults().themes["base16-ocean.dark"].clone(),
         }
     }
-    
     fn refresh_screen(&mut self) -> Result<(), std::io::Error> {
         Terminal::cursor_hide();
         Terminal::cursor_position(&Position::default());
@@ -151,30 +146,42 @@ impl Editor {
         let pressed_key = Terminal::read_key()?;
         match pressed_key {
             Key::Ctrl('q') => {
-                 if self.document.is_dirty() {
-                     let not_save = self.prompt("Exit without saving Y/n:").unwrap().unwrap();
-                     if not_save == "Y".to_string() || not_save.to_string()  == "y" {
+                if self.document.is_dirty() {
+                    let not_save = self.prompt("Exit without saving Y/n:").unwrap().unwrap();
+                    if not_save == "Y".to_string() || not_save.to_string() == "y" {
                         self.should_quit = true;
-                     }else{
-                         return Ok(());
-                     }
+                    } else {
+                        return Ok(());
+                    }
                 }
                 self.should_quit = true;
-            },
+            }
             Key::Ctrl('s') => self.save(),
             Key::Ctrl('a') => {
                 self.cursor_position.x = crate::NUMBER_PRINT_OFFSET;
-            },
+            }
             Key::Ctrl('e') => {
-                let end_line =  self.document.row(self.cursor_position.y as usize).unwrap().len;
+                let end_line = self
+                    .document
+                    .row(self.cursor_position.y as usize)
+                    .unwrap()
+                    .len;
                 self.cursor_position.x = end_line;
+            }
+            Key::Ctrl('h') => {
+                self.cursor_position.y = 0;
+                self.scroll();
+            }
+            Key::Ctrl('g') => {
+                self.cursor_position.y = self.document.len();
+                self.scroll();
             }
             Key::Char(c) => {
                 self.document.insert(&self.cursor_position, c);
                 /*
-                *tab == 4space
-                *カーソールをspace4つ分動かす
-                */
+                 *tab == 4space
+                 *カーソールをspace4つ分動かす
+                 */
                 if c == '\t' {
                     self.cursor_position.x += 3;
                 }
@@ -220,7 +227,7 @@ impl Editor {
         match key {
             Key::Up => y = y.saturating_sub(1),
             Key::Down => {
-                if y < height-1 {
+                if y < height - 1 {
                     y = y.saturating_add(1);
                 }
             }
@@ -268,13 +275,13 @@ impl Editor {
         welcome_message.truncate(width);
         println!("{}\r", welcome_message);
     }
-    pub fn draw_row(&self, row: &Row,terminal_row : usize) -> String {
+    pub fn draw_row(&self, row: &Row, terminal_row: usize) -> String {
         let width = self.terminal.size().width as usize;
         let start = self.offset.x;
         let end = self.offset.x + width;
         let row = row.render(start, end);
-        Terminal::set_fg_color(color::Rgb(255,215,0));
-        print!("{0:>5} ", terminal_row as usize+self.offset.y+1);
+        Terminal::set_fg_color(color::Rgb(255, 215, 0));
+        print!("{0:>5} ", terminal_row as usize + self.offset.y + 1);
         Terminal::reset_fg_color();
         row
     }
@@ -287,10 +294,10 @@ impl Editor {
         for terminal_row in 0..height {
             Terminal::clear_current_line();
             if let Some(row) = self.document.row(terminal_row as usize + self.offset.y) {
-                let drow = self.draw_row(row,terminal_row as usize);
+                let drow = self.draw_row(row, terminal_row as usize);
                 let ranges: Vec<(Style, &str)> = highlight.highlight(&drow, &self.ss);
                 let escaped = as_24_bit_terminal_escaped(&ranges[..], true);
-               println!("{}\r",escaped);
+                println!("{}\r", escaped);
             } else if self.document.is_empty() && terminal_row == height / 3 {
                 self.draw_welcome_message();
             } else {
@@ -303,7 +310,7 @@ impl Editor {
         let width = self.terminal.size().width as usize;
         let modified_indicator = if self.document.is_dirty() {
             " (modified)"
-        }else{
+        } else {
             ""
         };
         let mut file_name = "[No Name]".to_string();
@@ -311,7 +318,12 @@ impl Editor {
             file_name = name.clone();
             file_name.truncate(20);
         }
-        status = format!("{} - {} lines{}", file_name, self.document.len(),modified_indicator);
+        status = format!(
+            "{} - {} lines{}",
+            file_name,
+            self.document.len(),
+            modified_indicator
+        );
 
         let line_indicator = format!(
             "{}/{}",
@@ -374,4 +386,3 @@ fn die(e: std::io::Error) {
     Terminal::clear_screen();
     panic!("{}", e);
 }
-
